@@ -13,7 +13,7 @@ export function createApp() {
   app.use(cors({ origin: config.corsOrigins.length ? config.corsOrigins : true }));
   app.use(express.json({ limit: '10mb' }));
 
-  app.get('/healthz', (_req, res) => {
+  app.get('/health', (_req, res) => {
     res.json({ status: 'ok' });
   });
 

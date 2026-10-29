@@ -17,7 +17,7 @@ Silme işlemi sunucuda değil, cihazda (işletim sisteminin onay penceresiyle) y
 
 | Metot | Yol | Gövde | Yanıt |
 |---|---|---|---|
-| GET | `/healthz` | – | `{ status: "ok" }` |
+| GET | `/health` | – | `{ status: "ok" }` |
 | POST | `/api/photos/analyze` | multipart, alan `photos` (en fazla 100 dosya × 5 MB). Dosya adı = fotoğraf kimliği | `{ results: PhotoFeatures[], failed }` |
 | POST | `/api/photos/groups` | JSON `{ photos: (PhotoFeatures & {width,height,fileSize,takenAt,isFavorite})[], options?: { hashThreshold, maxTimeGapSeconds } }` | `{ groups: [{ keep, remove, ranked, reclaimableBytes }], summary }` |
 | POST | `/api/photos/optimize?maxDimension=4096&quality=82&format=jpeg&stripMetadata=false` | multipart, alan `photo` (≤30 MB) | Görsel; boyutlar `X-PixClear-*` başlıklarında |
