@@ -1,0 +1,57 @@
+# main dalına her push'ta: test → image build → Artifact Registry → Cloud Run
+steps:
+  - id: test
+    name: 'node:22-slim'
+    entrypoint: bash
+    args: ['-c', 'npm ci && npm test']
+
+  - id: build
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${BUILD_ID}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:latest'
+      - '.'
+
+  - id: push
+    name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}']
+
+  - id: deploy
+    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE}'
+      - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${BUILD_ID}'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=8080'
+      - '--memory=1Gi'
+      - '--cpu=1'
+      # Görsel işleme bellek yoğun; aynı anda en fazla 10 istek
+      - '--concurrency=10'
+      - '--timeout=300'
+      - '--min-instances=0'
+      - '--max-instances=5'
+      - '--set-env-vars=NODE_ENV=production,CORS_ORIGINS=${_CORS_ORIGINS}'
+      - '--service-account=${_SERVICE_ACCOUNT}'
+
+images:
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${BUILD_ID}'
+
+substitutions:
+  _REGION: us-central1
+  _REPO: pixclear-repo
+  _SERVICE: pixclear-backend
+  _SERVICE_ACCOUNT: novai-ai-project-new@novai-ai-project-new.iam.gserviceaccount.com
+  # Virgül gcloud'da ayraç olduğu için origin'ler "|" ile ayrılır, uygulama ikisini de kabul eder
+  _CORS_ORIGINS: 'https://pixclear-frontend-557331254637.us-central1.run.app|capacitor://localhost|https://localhost|http://localhost:5173'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_MEDIUM
